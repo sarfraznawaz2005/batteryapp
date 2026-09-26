@@ -65,7 +65,8 @@ Requires the .NET 8 SDK (`dotnet --version` should report 8.x).
 ```
 BatteryTray/             the app (WinForms, .NET 8)
   Program.cs              entry point, single-instance guard
-  TrayContext.cs          tray icon, refresh timer, menu, alerts
+  TrayContext.cs          tray icon, refresh timer, alerts
+  TrayMenu.cs             right-click menu (native Windows menu, DPI-aware)
   IconRenderer.cs         draws the number / plug / background into the icon
   AppSettings.cs          settings model, load/save as JSON
   SettingsForm.cs         Settings window (built in code, DPI-aware)

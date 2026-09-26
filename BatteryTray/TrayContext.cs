@@ -7,7 +7,7 @@ internal sealed class TrayContext : ApplicationContext
 {
     private readonly NotifyIcon _notifyIcon;
     private readonly System.Windows.Forms.Timer _timer;
-    private readonly ToolStripMenuItem _startupItem;
+    private readonly TrayMenu _menu;
     private AppSettings _settings;
     private SettingsForm? _settingsForm;
     private Icon? _currentIcon;
@@ -19,16 +19,22 @@ internal sealed class TrayContext : ApplicationContext
     {
         _settings = AppSettings.Load();
 
-        _startupItem = new ToolStripMenuItem("Start with Windows", null, (_, _) => ToggleStartup());
-        var menu = new ContextMenuStrip();
-        menu.Items.Add("Settings...", null, (_, _) => ShowSettings());
-        menu.Items.Add(_startupItem);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Exit", null, (_, _) => ExitThread());
-        menu.Opening += (_, _) => _startupItem.Checked = StartupManager.IsEnabled();
+        // Settings is the default (bold) item, matching the double-click action.
+        _menu = new TrayMenu(() => new TrayMenu.Item?[]
+        {
+            new("Settings...", ShowSettings, IsDefault: true),
+            new("Start with Windows", ToggleStartup, Checked: StartupManager.IsEnabled()),
+            null,
+            new("Exit", ExitThread),
+        });
 
-        _notifyIcon = new NotifyIcon { ContextMenuStrip = menu, Visible = true };
+        _notifyIcon = new NotifyIcon { Visible = true };
         _notifyIcon.DoubleClick += (_, _) => ShowSettings();
+        _notifyIcon.MouseUp += (_, e) =>
+        {
+            if (e.Button == MouseButtons.Right)
+                _menu.Show();
+        };
 
         _timer = new System.Windows.Forms.Timer();
         _timer.Tick += (_, _) => UpdateIcon();
@@ -186,6 +192,7 @@ internal sealed class TrayContext : ApplicationContext
         {
             _timer.Dispose();
             _notifyIcon.Dispose();
+            _menu.Dispose();
             _currentIcon?.Dispose();
         }
         base.Dispose(disposing);

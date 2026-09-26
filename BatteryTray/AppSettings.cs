@@ -12,7 +12,7 @@ public sealed class AppSettings
     /// <summary>Shrink the text when it is wider than the icon (e.g. "100").</summary>
     public bool ShrinkToFit { get; set; } = true;
 
-    public string ChargingColor { get; set; } = "#15A34A";
+    public string ChargingColor { get; set; } = "#15803D";
     public string OnBatteryColor { get; set; } = "#202020";
     public string LowColor { get; set; } = "#DC2626";
 
