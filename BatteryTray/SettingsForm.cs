@@ -55,7 +55,11 @@ internal sealed class SettingsForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        ShowIcon = false;
+        using (var iconStream = typeof(SettingsForm).Assembly.GetManifestResourceStream("BatteryTray.app.ico"))
+        {
+            if (iconStream != null)
+                Icon = new Icon(iconStream);
+        }
         ShowInTaskbar = true;
         StartPosition = FormStartPosition.CenterScreen;
         AutoSize = true;

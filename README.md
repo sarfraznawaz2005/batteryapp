@@ -56,7 +56,7 @@ Requires the .NET 8 SDK (`dotnet --version` should report 8.x).
 - `build.bat` (or `build.ps1`) - stops any running instance, cleans, then publishes a slim,
   framework-dependent, single-file production exe to `publish\BatteryTray.exe`.
   "Framework-dependent" means it needs the .NET 8 Desktop Runtime already on the machine that
-  runs it - that's what keeps it small (about 180 KB) instead of bundling the whole runtime.
+  runs it - that's what keeps it small (about 300 KB) instead of bundling the whole runtime.
 - `run.bat` (or `run.ps1`) - stops any already-running instance, cleans, then runs the app
   straight from source in dev mode (`dotnet run`, Debug config).
 
@@ -71,6 +71,9 @@ BatteryTray/             the app (WinForms, .NET 8)
   SettingsForm.cs         Settings window (built in code, DPI-aware)
   ColorSwatchButton.cs    color picker button used in Settings
   StartupManager.cs       Start with Windows (HKCU Run key)
+  app.ico                 exe and window icon
+tools/
+  make-icon.ps1           regenerates BatteryTray/app.ico from code
 ```
 
 ## License
