@@ -14,6 +14,9 @@ internal sealed class TrayContext : ApplicationContext
     private string _lastKey = "";
     private bool _lowAlertShown;
     private bool _chargeAlertShown;
+    private const int NoMilestone = -1;
+    private int _lastMilestone = NoMilestone;
+    private bool _milestoneReady;
 
     public TrayContext()
     {
@@ -94,6 +97,8 @@ internal sealed class TrayContext : ApplicationContext
         if (!known)
             return;
 
+        bool alertShown = false;
+
         if (pluggedIn || percent > _settings.LowThreshold)
         {
             _lowAlertShown = false;
@@ -101,6 +106,7 @@ internal sealed class TrayContext : ApplicationContext
         else if (_settings.LowAlertEnabled && !_lowAlertShown)
         {
             _lowAlertShown = true;
+            alertShown = true;
             _notifyIcon.ShowBalloonTip(10000, "Battery low",
                 $"Battery is at {percent}%. Plug in the charger.", ToolTipIcon.Warning);
         }
@@ -112,10 +118,40 @@ internal sealed class TrayContext : ApplicationContext
         else if (_settings.ChargeAlertEnabled && !_chargeAlertShown && percent >= _settings.ChargeAlertPercent)
         {
             _chargeAlertShown = true;
+            alertShown = true;
             _notifyIcon.ShowBalloonTip(10000, "Battery charged",
                 $"Battery is at {percent}%. You can unplug the charger to help the battery last longer.",
                 ToolTipIcon.Info);
         }
+
+        if (_settings.StepAlertEnabled)
+            CheckMilestone(percent, alertShown);
+    }
+
+    /// <summary>
+    /// Shows a notice at every 10% step (100, 90 ... 10), once per step. The low and charged
+    /// alerts win: if one was shown in this check, the step notice is skipped.
+    /// </summary>
+    private void CheckMilestone(int percent, bool otherAlertShown)
+    {
+        int step = percent >= 10 && percent % 10 == 0 ? percent : NoMilestone;
+
+        // First check after app start only records the level; it does not notify.
+        if (!_milestoneReady)
+        {
+            _milestoneReady = true;
+            _lastMilestone = step;
+            return;
+        }
+
+        if (step == NoMilestone || step == _lastMilestone)
+            return;
+
+        _lastMilestone = step;
+        if (otherAlertShown)
+            return;
+
+        _notifyIcon.ShowBalloonTip(10000, "Battery level", $"Battery is at {percent}%.", ToolTipIcon.Info);
     }
 
     private static string BuildTooltip(bool known, int percent, bool pluggedIn, PowerStatus status)

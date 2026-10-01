@@ -20,6 +20,8 @@ It shows the current battery percentage as a number right in the tray, colored b
   - Battery low - when on battery and at or below the low battery level.
   - Battery charged - when plugged in and charged to 80% (configurable, 50-100%), to help
     the battery last longer.
+  - Battery level - at every 10% step (100, 90 ... 10), once per step (optional, on by default).
+    The low and charged alerts win when they show at the same time.
 - Font, font size and bold are configurable. Long numbers such as "100" shrink to fit.
 - Hover the icon for details, e.g. `Battery: 64% - 3 h 12 min left`.
 - Start with Windows (optional, off by default).
