@@ -17,6 +17,8 @@ internal sealed class TrayContext : ApplicationContext
     private const int NoMilestone = -1;
     private int _lastMilestone = NoMilestone;
     private bool _milestoneReady;
+    private const int JumpThreshold = 2;
+    private int _lastPercent = NoMilestone;
 
     public TrayContext()
     {
@@ -52,7 +54,13 @@ internal sealed class TrayContext : ApplicationContext
         UpdateIcon(force: true);
     }
 
-    private void OnPowerModeChanged(object? sender, PowerModeChangedEventArgs e) => UpdateIcon(force: true);
+    private void OnPowerModeChanged(object? sender, PowerModeChangedEventArgs e)
+    {
+        // The level can change a lot while the PC sleeps, so do not call that a jump.
+        if (e.Mode == PowerModes.Resume)
+            _lastPercent = NoMilestone;
+        UpdateIcon(force: true);
+    }
 
     private void OnForceRedraw(object? sender, EventArgs e) => UpdateIcon(force: true);
 
@@ -124,8 +132,25 @@ internal sealed class TrayContext : ApplicationContext
                 ToolTipIcon.Info);
         }
 
+        if (CheckJump(percent))
+            alertShown = true;
+
         if (_settings.StepAlertEnabled)
             CheckMilestone(percent, alertShown);
+    }
+
+    /// <summary>Shows a notice when the level moves by more than 2% since the last check.</summary>
+    private bool CheckJump(int percent)
+    {
+        int previous = _lastPercent;
+        _lastPercent = percent;
+
+        if (!_settings.JumpAlertEnabled || previous == NoMilestone || Math.Abs(percent - previous) <= JumpThreshold)
+            return false;
+
+        _notifyIcon.ShowBalloonTip(10000, "Battery level jumped",
+            $"Battery went from {previous}% to {percent}%.", ToolTipIcon.Warning);
+        return true;
     }
 
     /// <summary>

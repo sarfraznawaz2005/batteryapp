@@ -30,6 +30,7 @@ public sealed class AppSettings
     public bool ChargeAlertEnabled { get; set; } = true;
     public int ChargeAlertPercent { get; set; } = 80;
     public bool StepAlertEnabled { get; set; } = true;
+    public bool JumpAlertEnabled { get; set; } = true;
 
     private static readonly string FolderPath =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BatteryTray");

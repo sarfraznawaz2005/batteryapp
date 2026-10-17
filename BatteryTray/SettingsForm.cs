@@ -31,6 +31,7 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _lowAlert = new() { Text = "Alert me when the battery is low", AutoSize = true };
     private readonly CheckBox _chargeAlert = new() { Text = "Alert me when charged to", AutoSize = true };
     private readonly CheckBox _stepAlert = new() { Text = "Alert me at every 10% (100, 90 ... 10)", AutoSize = true };
+    private readonly CheckBox _jumpAlert = new() { Text = "Alert me when the level jumps by more than 2%", AutoSize = true };
     private readonly NumericUpDown _chargeAlertPercent = new() { Minimum = 50, Maximum = 100, Width = 70 };
 
     // General
@@ -87,7 +88,8 @@ internal sealed class SettingsForm : Form
             Row("Low battery level", Inline(_threshold, Caption("%"))),
             Full(_lowAlert),
             Full(Inline(_chargeAlert, _chargeAlertPercent, Caption("%"))),
-            Full(_stepAlert));
+            Full(_stepAlert),
+            Full(_jumpAlert));
 
         var generalGroup = Group("General",
             Row("Check every", Inline(_interval, Caption("seconds"))),
@@ -188,6 +190,7 @@ internal sealed class SettingsForm : Form
         _lowAlert.Checked = _settings.LowAlertEnabled;
         _chargeAlert.Checked = _settings.ChargeAlertEnabled;
         _stepAlert.Checked = _settings.StepAlertEnabled;
+        _jumpAlert.Checked = _settings.JumpAlertEnabled;
         _chargeAlertPercent.Value = Math.Clamp(_settings.ChargeAlertPercent, 50, 100);
         _interval.Value = Math.Clamp(_settings.UpdateIntervalSeconds, 1, 300);
         _startup.Checked = StartupManager.IsEnabled();
@@ -210,6 +213,7 @@ internal sealed class SettingsForm : Form
         LowAlertEnabled = _lowAlert.Checked,
         ChargeAlertEnabled = _chargeAlert.Checked,
         StepAlertEnabled = _stepAlert.Checked,
+        JumpAlertEnabled = _jumpAlert.Checked,
         ChargeAlertPercent = (int)_chargeAlertPercent.Value,
         UpdateIntervalSeconds = (int)_interval.Value,
     };
