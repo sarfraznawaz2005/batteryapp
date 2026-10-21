@@ -32,6 +32,10 @@ public sealed class AppSettings
     public bool StepAlertEnabled { get; set; } = true;
     public bool JumpAlertEnabled { get; set; } = true;
 
+    /// <summary>Opt-in: every N minutes, tell how much the level changed.</summary>
+    public bool TrendAlertEnabled { get; set; } = false;
+    public int TrendAlertMinutes { get; set; } = 15;
+
     private static readonly string FolderPath =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BatteryTray");
 
@@ -71,6 +75,7 @@ public sealed class AppSettings
         LowThreshold = Math.Clamp(LowThreshold, 1, 99);
         UpdateIntervalSeconds = Math.Clamp(UpdateIntervalSeconds, 1, 300);
         ChargeAlertPercent = Math.Clamp(ChargeAlertPercent, 50, 100);
+        TrendAlertMinutes = Math.Clamp(TrendAlertMinutes, 1, 240);
         if (string.IsNullOrWhiteSpace(FontFamily))
             FontFamily = "Segoe UI";
         return this;

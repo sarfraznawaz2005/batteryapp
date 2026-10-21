@@ -19,6 +19,8 @@ internal sealed class TrayContext : ApplicationContext
     private bool _milestoneReady;
     private const int JumpThreshold = 2;
     private int _lastPercent = NoMilestone;
+    private DateTime _trendStartTime;
+    private int _trendStartPercent = NoMilestone;
 
     public TrayContext()
     {
@@ -58,7 +60,10 @@ internal sealed class TrayContext : ApplicationContext
     {
         // The level can change a lot while the PC sleeps, so do not call that a jump.
         if (e.Mode == PowerModes.Resume)
+        {
             _lastPercent = NoMilestone;
+            _trendStartPercent = NoMilestone;
+        }
         UpdateIcon(force: true);
     }
 
@@ -137,6 +142,39 @@ internal sealed class TrayContext : ApplicationContext
 
         if (_settings.StepAlertEnabled)
             CheckMilestone(percent, alertShown);
+
+        CheckTrend(percent);
+    }
+
+    /// <summary>Every N minutes, shows how much the level changed since the last report.</summary>
+    private void CheckTrend(int percent)
+    {
+        if (!_settings.TrendAlertEnabled)
+        {
+            _trendStartPercent = NoMilestone;
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        if (_trendStartPercent == NoMilestone)
+        {
+            _trendStartTime = now;
+            _trendStartPercent = percent;
+            return;
+        }
+
+        var elapsed = now - _trendStartTime;
+        if (elapsed < TimeSpan.FromMinutes(_settings.TrendAlertMinutes))
+            return;
+
+        int change = percent - _trendStartPercent;
+        string sign = change > 0 ? "+" : change < 0 ? "-" : "";
+        _notifyIcon.ShowBalloonTip(10000, $"Battery level at {percent}%",
+            $"{sign}{Math.Abs(change)}% past {elapsed.TotalMinutes:0.#} minutes from {_trendStartPercent}%",
+            ToolTipIcon.Info);
+
+        _trendStartTime = now;
+        _trendStartPercent = percent;
     }
 
     /// <summary>Shows a notice when the level moves by more than 2% since the last check.</summary>

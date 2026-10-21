@@ -33,6 +33,8 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _stepAlert = new() { Text = "Alert me at every 10% (100, 90 ... 10)", AutoSize = true };
     private readonly CheckBox _jumpAlert = new() { Text = "Alert me when the level jumps by more than 2%", AutoSize = true };
     private readonly NumericUpDown _chargeAlertPercent = new() { Minimum = 50, Maximum = 100, Width = 70 };
+    private readonly CheckBox _trendAlert = new() { Text = "Tell me how much changed, every", AutoSize = true };
+    private readonly NumericUpDown _trendMinutes = new() { Minimum = 1, Maximum = 240, Width = 70 };
 
     // General
     private readonly NumericUpDown _interval = new() { Minimum = 1, Maximum = 300, Width = 70 };
@@ -89,7 +91,8 @@ internal sealed class SettingsForm : Form
             Full(_lowAlert),
             Full(Inline(_chargeAlert, _chargeAlertPercent, Caption("%"))),
             Full(_stepAlert),
-            Full(_jumpAlert));
+            Full(_jumpAlert),
+            Full(Inline(_trendAlert, _trendMinutes, Caption("minutes"))));
 
         var generalGroup = Group("General",
             Row("Check every", Inline(_interval, Caption("seconds"))),
@@ -162,6 +165,7 @@ internal sealed class SettingsForm : Form
         _threshold.ValueChanged += (_, _) => _preview.Invalidate();
         _useBackground.CheckedChanged += (_, _) => { UpdateEnabledState(); _preview.Invalidate(); };
         _chargeAlert.CheckedChanged += (_, _) => UpdateEnabledState();
+        _trendAlert.CheckedChanged += (_, _) => UpdateEnabledState();
     }
 
     private void UpdateEnabledState()
@@ -171,6 +175,7 @@ internal sealed class SettingsForm : Form
         _fontSize.Enabled = !_useBackground.Checked;
         _shrink.Enabled = !_useBackground.Checked;
         _chargeAlertPercent.Enabled = _chargeAlert.Checked;
+        _trendMinutes.Enabled = _trendAlert.Checked;
     }
 
     private void LoadValues()
@@ -192,6 +197,8 @@ internal sealed class SettingsForm : Form
         _stepAlert.Checked = _settings.StepAlertEnabled;
         _jumpAlert.Checked = _settings.JumpAlertEnabled;
         _chargeAlertPercent.Value = Math.Clamp(_settings.ChargeAlertPercent, 50, 100);
+        _trendAlert.Checked = _settings.TrendAlertEnabled;
+        _trendMinutes.Value = Math.Clamp(_settings.TrendAlertMinutes, 1, 240);
         _interval.Value = Math.Clamp(_settings.UpdateIntervalSeconds, 1, 300);
         _startup.Checked = StartupManager.IsEnabled();
         UpdateEnabledState();
@@ -215,6 +222,8 @@ internal sealed class SettingsForm : Form
         StepAlertEnabled = _stepAlert.Checked,
         JumpAlertEnabled = _jumpAlert.Checked,
         ChargeAlertPercent = (int)_chargeAlertPercent.Value,
+        TrendAlertEnabled = _trendAlert.Checked,
+        TrendAlertMinutes = (int)_trendMinutes.Value,
         UpdateIntervalSeconds = (int)_interval.Value,
     };
 
