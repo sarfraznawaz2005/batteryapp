@@ -15,6 +15,7 @@ public sealed class AppSettings
     public string ChargingColor { get; set; } = "#15803D";
     public string OnBatteryColor { get; set; } = "#202020";
     public string LowColor { get; set; } = "#DC2626";
+    public string FullColor { get; set; } = "#EA580C";
 
     /// <summary>Opt-in: fill a rounded box with the state color and draw the text on top.</summary>
     public bool UseBackground { get; set; } = false;

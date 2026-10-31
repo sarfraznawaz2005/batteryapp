@@ -13,6 +13,7 @@ It shows the current battery percentage as a number right in the tray, colored b
   - **Green** while plugged in.
   - **Dark** while on battery.
   - **Red** at or below the low battery level (default 30%).
+  - **Orange** when full and plugged in.
 - Shows a plug symbol instead of "100" when full and plugged in (optional, on by default).
 - Optional colored background: the number is drawn on a rounded box in the state color, sized
   automatically to fill the box. Off by default.

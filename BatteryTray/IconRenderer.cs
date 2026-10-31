@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace BatteryTray;
 
-public enum BatteryState { Charging, OnBattery, Low }
+public enum BatteryState { Charging, Full, OnBattery, Low }
 
 /// <summary>Draws the battery percentage (or a plug symbol) into a tray icon.</summary>
 internal static class IconRenderer
@@ -15,6 +15,7 @@ internal static class IconRenderer
     public static Color ColorFor(BatteryState state, AppSettings s) => state switch
     {
         BatteryState.Charging => AppSettings.ParseColor(s.ChargingColor, Color.Green),
+        BatteryState.Full => AppSettings.ParseColor(s.FullColor, Color.Orange),
         BatteryState.Low => AppSettings.ParseColor(s.LowColor, Color.Red),
         _ => AppSettings.ParseColor(s.OnBatteryColor, Color.Black),
     };

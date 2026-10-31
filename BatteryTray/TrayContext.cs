@@ -87,7 +87,8 @@ internal sealed class TrayContext : ApplicationContext
         int percent = known ? (int)Math.Round(fraction * 100) : -1;
         bool pluggedIn = status.PowerLineStatus == PowerLineStatus.Online;
 
-        BatteryState state = pluggedIn ? BatteryState.Charging
+        BatteryState state = pluggedIn && known && percent >= 100 ? BatteryState.Full
+            : pluggedIn ? BatteryState.Charging
             : known && percent <= _settings.LowThreshold ? BatteryState.Low
             : BatteryState.OnBattery;
 

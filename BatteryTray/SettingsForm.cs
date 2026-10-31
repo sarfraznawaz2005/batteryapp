@@ -22,6 +22,7 @@ internal sealed class SettingsForm : Form
     private readonly ColorSwatchButton _chargingBtn = new();
     private readonly ColorSwatchButton _batteryBtn = new();
     private readonly ColorSwatchButton _lowBtn = new();
+    private readonly ColorSwatchButton _fullBtn = new();
     private readonly CheckBox _useBackground = new() { Text = "Use a colored background", AutoSize = true };
     private readonly ColorSwatchButton _bgTextBtn = new();
     private readonly CheckBox _plugWhenFull = new() { Text = "Show a plug when full and plugged in", AutoSize = true };
@@ -83,6 +84,7 @@ internal sealed class SettingsForm : Form
             Row("Plugged in", _chargingBtn),
             Row("On battery", _batteryBtn),
             Row("Low battery", _lowBtn),
+            Row("Full", _fullBtn),
             Full(_useBackground),
             Row("Text on background", _bgTextBtn),
             Full(_plugWhenFull));
@@ -156,7 +158,7 @@ internal sealed class SettingsForm : Form
 
     private void WireEvents()
     {
-        foreach (var btn in new[] { _chargingBtn, _batteryBtn, _lowBtn, _bgTextBtn })
+        foreach (var btn in new[] { _chargingBtn, _batteryBtn, _lowBtn, _fullBtn, _bgTextBtn })
             btn.ColorChanged += (_, _) => _preview.Invalidate();
 
         _fontCombo.SelectedIndexChanged += (_, _) => _preview.Invalidate();
@@ -190,6 +192,7 @@ internal sealed class SettingsForm : Form
         _chargingBtn.Color = AppSettings.ParseColor(_settings.ChargingColor, Color.Green);
         _batteryBtn.Color = AppSettings.ParseColor(_settings.OnBatteryColor, Color.Black);
         _lowBtn.Color = AppSettings.ParseColor(_settings.LowColor, Color.Red);
+        _fullBtn.Color = AppSettings.ParseColor(_settings.FullColor, Color.Orange);
         _useBackground.Checked = _settings.UseBackground;
         _bgTextBtn.Color = AppSettings.ParseColor(_settings.BackgroundTextColor, Color.White);
         _plugWhenFull.Checked = _settings.ShowPlugWhenFull;
@@ -216,6 +219,7 @@ internal sealed class SettingsForm : Form
         ChargingColor = AppSettings.ToHex(_chargingBtn.Color),
         OnBatteryColor = AppSettings.ToHex(_batteryBtn.Color),
         LowColor = AppSettings.ToHex(_lowBtn.Color),
+        FullColor = AppSettings.ToHex(_fullBtn.Color),
         UseBackground = _useBackground.Checked,
         BackgroundTextColor = AppSettings.ToHex(_bgTextBtn.Color),
         ShowPlugWhenFull = _plugWhenFull.Checked,
@@ -374,7 +378,7 @@ internal sealed class SettingsForm : Form
             (string? text, BatteryState state, string label)[] samples =
             {
                 ("85", BatteryState.Charging, "Plugged in"),
-                (s.ShowPlugWhenFull ? null : "100", BatteryState.Charging, "Full"),
+                (s.ShowPlugWhenFull ? null : "100", BatteryState.Full, "Full"),
                 ("64", BatteryState.OnBattery, "On battery"),
                 ($"{s.LowThreshold}", BatteryState.Low, "Low"),
             };
