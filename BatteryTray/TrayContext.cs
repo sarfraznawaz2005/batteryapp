@@ -7,6 +7,7 @@ internal sealed class TrayContext : ApplicationContext
 {
     private readonly NotifyIcon _notifyIcon;
     private readonly System.Windows.Forms.Timer _timer;
+    private readonly System.Windows.Forms.Timer _fullReminderTimer;
     private readonly TrayMenu _menu;
     private AppSettings _settings;
     private SettingsForm? _settingsForm;
@@ -21,6 +22,7 @@ internal sealed class TrayContext : ApplicationContext
     private int _lastPercent = NoMilestone;
     private DateTime _trendStartTime;
     private int _trendStartPercent = NoMilestone;
+    private const int FullReminderIntervalMs = 60_000;
 
     public TrayContext()
     {
@@ -47,6 +49,10 @@ internal sealed class TrayContext : ApplicationContext
         _timer.Tick += (_, _) => UpdateIcon();
         ApplyTimerInterval();
         _timer.Start();
+
+        // Separate timer: the check interval can be longer than one minute.
+        _fullReminderTimer = new System.Windows.Forms.Timer { Interval = FullReminderIntervalMs };
+        _fullReminderTimer.Tick += (_, _) => OnFullReminderTick();
 
         // React at once to plug/unplug and to DPI or theme changes.
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
@@ -86,6 +92,7 @@ internal sealed class TrayContext : ApplicationContext
             : BatteryState.OnBattery;
 
         CheckAlerts(known, percent, pluggedIn);
+        _fullReminderTimer.Enabled = _settings.FullReminderEnabled && known && pluggedIn && percent >= 100;
         _notifyIcon.Text = BuildTooltip(known, percent, pluggedIn, status);
 
         // null text means "draw the plug symbol".
@@ -102,6 +109,17 @@ internal sealed class TrayContext : ApplicationContext
         _notifyIcon.Icon = newIcon;
         _currentIcon?.Dispose();
         _currentIcon = newIcon;
+    }
+
+    /// <summary>Reads the level first, so no reminder shows if the charger was just removed.</summary>
+    private void OnFullReminderTick()
+    {
+        UpdateIcon();
+        if (_fullReminderTimer.Enabled)
+        {
+            _notifyIcon.ShowBalloonTip(10000, "Battery full",
+                "Battery is at 100%. Please unplug the charger.", ToolTipIcon.Warning);
+        }
     }
 
     /// <summary>Shows each alert once; it re-arms when the charger state or level moves back.</summary>
@@ -280,6 +298,7 @@ internal sealed class TrayContext : ApplicationContext
         SystemEvents.DisplaySettingsChanged -= OnForceRedraw;
         SystemEvents.UserPreferenceChanged -= OnForceRedraw;
         _timer.Stop();
+        _fullReminderTimer.Stop();
         _settingsForm?.Close();
         _notifyIcon.Visible = false;
         base.ExitThreadCore();
@@ -290,6 +309,7 @@ internal sealed class TrayContext : ApplicationContext
         if (disposing)
         {
             _timer.Dispose();
+            _fullReminderTimer.Dispose();
             _notifyIcon.Dispose();
             _menu.Dispose();
             _currentIcon?.Dispose();
