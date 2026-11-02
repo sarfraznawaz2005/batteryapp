@@ -22,7 +22,9 @@ It shows the current battery percentage as a number right in the tray, colored b
   - Battery charged - when plugged in and charged to 80% (configurable, 50-100%), to help
     the battery last longer.
   - Battery full - at once when it gets to 100% while plugged in, then every minute until you
-    unplug (optional, on by default). This is the only alert that repeats.
+    unplug (optional, on by default). This is the only alert that repeats. It is the app's own
+    bubble above the tray icon (click it to close it), not a Windows notification, and the tray
+    icon blinks while the battery is full.
   - Battery level - at every 10% step (100, 90 ... 10), once per step (optional, on by default).
   - Battery level jumped - when the level changes by more than 2% between two checks, for example "52% to 40%" (optional, on by default).
     The low and charged alerts win when they show at the same time.
@@ -73,6 +75,7 @@ BatteryTray/             the app (WinForms, .NET 8)
   Program.cs              entry point, single-instance guard
   TrayContext.cs          tray icon, refresh timer, alerts
   TrayMenu.cs             right-click menu (native Windows menu, DPI-aware)
+  FullBubble.cs           "Battery full" bubble shown above the tray icon
   IconRenderer.cs         draws the number / plug / background into the icon
   AppSettings.cs          settings model, load/save as JSON
   SettingsForm.cs         Settings window (built in code, DPI-aware)

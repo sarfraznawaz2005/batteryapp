@@ -67,6 +67,18 @@ internal static class IconRenderer
     public static Icon RenderIcon(string? text, BatteryState state, AppSettings s, int size)
     {
         using var bmp = RenderBitmap(text, state, s, size);
+        return ToIcon(bmp);
+    }
+
+    /// <summary>A fully transparent icon, used to make the tray icon blink.</summary>
+    public static Icon RenderBlankIcon(int size)
+    {
+        using var bmp = new Bitmap(size, size);
+        return ToIcon(bmp);
+    }
+
+    private static Icon ToIcon(Bitmap bmp)
+    {
         IntPtr hIcon = bmp.GetHicon();
         try
         {

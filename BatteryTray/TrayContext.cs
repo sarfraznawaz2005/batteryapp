@@ -23,6 +23,11 @@ internal sealed class TrayContext : ApplicationContext
     private DateTime _trendStartTime;
     private int _trendStartPercent = NoMilestone;
     private const int FullReminderIntervalMs = 60_000;
+    private const int BlinkIntervalMs = 600;
+    private readonly System.Windows.Forms.Timer _blinkTimer;
+    private Icon? _blankIcon;
+    private bool _blinkHidden;
+    private FullBubble? _bubble;
     // Near full, Windows often reports 100% and 99% in turns. Stay "full" until the level falls
     // below this, so the reminder timer does not restart each time and never reaches one minute.
     private const int FullReleasePercent = 97;
@@ -57,6 +62,10 @@ internal sealed class TrayContext : ApplicationContext
         // Separate timer: the check interval can be longer than one minute.
         _fullReminderTimer = new System.Windows.Forms.Timer { Interval = FullReminderIntervalMs };
         _fullReminderTimer.Tick += (_, _) => OnFullReminderTick();
+
+        // While full, the icon blinks so it is easy to notice.
+        _blinkTimer = new System.Windows.Forms.Timer { Interval = BlinkIntervalMs };
+        _blinkTimer.Tick += (_, _) => OnBlinkTick();
 
         // React at once to plug/unplug and to DPI or theme changes.
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
@@ -100,7 +109,11 @@ internal sealed class TrayContext : ApplicationContext
         _isFull = known && pluggedIn && (percent >= 100 || (_isFull && percent >= FullReleasePercent));
         bool fullStarted = _settings.FullReminderEnabled && _isFull && !wasFull;
         CheckAlerts(known, percent, pluggedIn, fullStarted);
-        _fullReminderTimer.Enabled = _settings.FullReminderEnabled && _isFull;
+        bool remindFull = _settings.FullReminderEnabled && _isFull;
+        _fullReminderTimer.Enabled = remindFull;
+        SetBlinking(remindFull);
+        if (!remindFull)
+            _bubble?.Hide();
         _notifyIcon.Text = BuildTooltip(known, percent, pluggedIn, status);
 
         // null text means "draw the plug symbol".
@@ -115,8 +128,34 @@ internal sealed class TrayContext : ApplicationContext
         int size = SystemInformation.SmallIconSize.Width;
         var newIcon = IconRenderer.RenderIcon(text, state, _settings, size);
         _notifyIcon.Icon = newIcon;
+        _blinkHidden = false;
         _currentIcon?.Dispose();
         _currentIcon = newIcon;
+    }
+
+    private void SetBlinking(bool on)
+    {
+        if (_blinkTimer.Enabled == on)
+            return;
+        _blinkTimer.Enabled = on;
+        if (!on && _blinkHidden)
+        {
+            _blinkHidden = false;
+            _notifyIcon.Icon = _currentIcon;
+        }
+    }
+
+    /// <summary>Switches between the normal icon and an empty one.</summary>
+    private void OnBlinkTick()
+    {
+        int size = SystemInformation.SmallIconSize.Width;
+        if (_blankIcon == null || _blankIcon.Width != size)
+        {
+            _blankIcon?.Dispose();
+            _blankIcon = IconRenderer.RenderBlankIcon(size);
+        }
+        _blinkHidden = !_blinkHidden;
+        _notifyIcon.Icon = _blinkHidden ? _blankIcon : _currentIcon;
     }
 
     /// <summary>Reads the level first, so no reminder shows if the charger was just removed.</summary>
@@ -127,9 +166,15 @@ internal sealed class TrayContext : ApplicationContext
             ShowFullReminder();
     }
 
-    private void ShowFullReminder() =>
-        _notifyIcon.ShowBalloonTip(10000, "Battery full",
-            "Battery is full. Please unplug the charger.", ToolTipIcon.Warning);
+    /// <summary>
+    /// Uses the app's own bubble, not a Windows notification: Windows sometimes did not show
+    /// the repeated "Battery full" notification.
+    /// </summary>
+    private void ShowFullReminder()
+    {
+        _bubble ??= new FullBubble();
+        _bubble.ShowAt(_notifyIcon);
+    }
 
     /// <summary>
     /// Shows each alert once; it re-arms when the charger state or level moves back.
@@ -321,6 +366,8 @@ internal sealed class TrayContext : ApplicationContext
         SystemEvents.UserPreferenceChanged -= OnForceRedraw;
         _timer.Stop();
         _fullReminderTimer.Stop();
+        _blinkTimer.Stop();
+        _bubble?.Close();
         _settingsForm?.Close();
         _notifyIcon.Visible = false;
         base.ExitThreadCore();
@@ -332,9 +379,12 @@ internal sealed class TrayContext : ApplicationContext
         {
             _timer.Dispose();
             _fullReminderTimer.Dispose();
+            _blinkTimer.Dispose();
+            _bubble?.Dispose();
             _notifyIcon.Dispose();
             _menu.Dispose();
             _currentIcon?.Dispose();
+            _blankIcon?.Dispose();
         }
         base.Dispose(disposing);
     }
