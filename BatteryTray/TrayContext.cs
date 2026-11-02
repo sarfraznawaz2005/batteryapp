@@ -23,6 +23,10 @@ internal sealed class TrayContext : ApplicationContext
     private DateTime _trendStartTime;
     private int _trendStartPercent = NoMilestone;
     private const int FullReminderIntervalMs = 60_000;
+    // Near full, Windows often reports 100% and 99% in turns. Stay "full" until the level falls
+    // below this, so the reminder timer does not restart each time and never reaches one minute.
+    private const int FullReleasePercent = 97;
+    private bool _isFull;
 
     public TrayContext()
     {
@@ -92,8 +96,11 @@ internal sealed class TrayContext : ApplicationContext
             : known && percent <= _settings.LowThreshold ? BatteryState.Low
             : BatteryState.OnBattery;
 
-        CheckAlerts(known, percent, pluggedIn);
-        _fullReminderTimer.Enabled = _settings.FullReminderEnabled && known && pluggedIn && percent >= 100;
+        bool wasFull = _isFull;
+        _isFull = known && pluggedIn && (percent >= 100 || (_isFull && percent >= FullReleasePercent));
+        bool fullStarted = _settings.FullReminderEnabled && _isFull && !wasFull;
+        CheckAlerts(known, percent, pluggedIn, fullStarted);
+        _fullReminderTimer.Enabled = _settings.FullReminderEnabled && _isFull;
         _notifyIcon.Text = BuildTooltip(known, percent, pluggedIn, status);
 
         // null text means "draw the plug symbol".
@@ -117,14 +124,19 @@ internal sealed class TrayContext : ApplicationContext
     {
         UpdateIcon();
         if (_fullReminderTimer.Enabled)
-        {
-            _notifyIcon.ShowBalloonTip(10000, "Battery full",
-                "Battery is at 100%. Please unplug the charger.", ToolTipIcon.Warning);
-        }
+            ShowFullReminder();
     }
 
-    /// <summary>Shows each alert once; it re-arms when the charger state or level moves back.</summary>
-    private void CheckAlerts(bool known, int percent, bool pluggedIn)
+    private void ShowFullReminder() =>
+        _notifyIcon.ShowBalloonTip(10000, "Battery full",
+            "Battery is full. Please unplug the charger.", ToolTipIcon.Warning);
+
+    /// <summary>
+    /// Shows each alert once; it re-arms when the charger state or level moves back.
+    /// fullStarted: the battery just became full, so the "Battery full" notice shows at once
+    /// (the timer repeats it every minute) and the "Battery charged" notice is skipped.
+    /// </summary>
+    private void CheckAlerts(bool known, int percent, bool pluggedIn, bool fullStarted)
     {
         if (!known)
             return;
@@ -150,14 +162,23 @@ internal sealed class TrayContext : ApplicationContext
         else if (_settings.ChargeAlertEnabled && !_chargeAlertShown && percent >= _settings.ChargeAlertPercent)
         {
             _chargeAlertShown = true;
-            alertShown = true;
-            _notifyIcon.ShowBalloonTip(10000, "Battery charged",
-                $"Battery is at {percent}%. You can unplug the charger to help the battery last longer.",
-                ToolTipIcon.Info);
+            if (!fullStarted)
+            {
+                alertShown = true;
+                _notifyIcon.ShowBalloonTip(10000, "Battery charged",
+                    $"Battery is at {percent}%. You can unplug the charger to help the battery last longer.",
+                    ToolTipIcon.Info);
+            }
         }
 
         if (CheckJump(percent))
             alertShown = true;
+
+        if (fullStarted)
+        {
+            alertShown = true;
+            ShowFullReminder();
+        }
 
         if (_settings.StepAlertEnabled)
             CheckMilestone(percent, alertShown);

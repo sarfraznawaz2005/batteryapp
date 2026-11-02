@@ -21,8 +21,8 @@ It shows the current battery percentage as a number right in the tray, colored b
   - Battery low - when on battery and at or below the low battery level.
   - Battery charged - when plugged in and charged to 80% (configurable, 50-100%), to help
     the battery last longer.
-  - Battery full - every minute while plugged in at 100%, until you unplug (optional, on by
-    default). This is the only alert that repeats.
+  - Battery full - at once when it gets to 100% while plugged in, then every minute until you
+    unplug (optional, on by default). This is the only alert that repeats.
   - Battery level - at every 10% step (100, 90 ... 10), once per step (optional, on by default).
   - Battery level jumped - when the level changes by more than 2% between two checks, for example "52% to 40%" (optional, on by default).
     The low and charged alerts win when they show at the same time.
