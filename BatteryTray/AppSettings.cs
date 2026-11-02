@@ -33,9 +33,6 @@ public sealed class AppSettings
     public bool StepAlertEnabled { get; set; } = true;
     public bool JumpAlertEnabled { get; set; } = true;
 
-    /// <summary>Remind every minute to unplug while the battery is full and plugged in.</summary>
-    public bool FullReminderEnabled { get; set; } = true;
-
     /// <summary>Opt-in: every N minutes, tell how much the level changed.</summary>
     public bool TrendAlertEnabled { get; set; } = false;
     public int TrendAlertMinutes { get; set; } = 15;

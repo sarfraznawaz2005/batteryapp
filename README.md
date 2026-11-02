@@ -17,14 +17,12 @@ It shows the current battery percentage as a number right in the tray, colored b
 - Shows a plug symbol instead of "100" when full and plugged in (optional, on by default).
 - Optional colored background: the number is drawn on a rounded box in the state color, sized
   automatically to fill the box. Off by default.
+- When full and plugged in, the tray icon and big "Battery Full!" text above the tray area blink
+  together until you unplug. This is not a Windows notification, so Windows cannot hide it.
 - Alerts (Windows notifications), each shown once and re-armed when the state changes:
   - Battery low - when on battery and at or below the low battery level.
   - Battery charged - when plugged in and charged to 80% (configurable, 50-100%), to help
     the battery last longer.
-  - Battery full - at once when it gets to 100% while plugged in, then every minute until you
-    unplug (optional, on by default). This is the only alert that repeats. It is the app's own
-    bubble above the tray icon (click it to close it), not a Windows notification, and the tray
-    icon blinks while the battery is full.
   - Battery level - at every 10% step (100, 90 ... 10), once per step (optional, on by default).
   - Battery level jumped - when the level changes by more than 2% between two checks, for example "52% to 40%" (optional, on by default).
     The low and charged alerts win when they show at the same time.
@@ -75,7 +73,7 @@ BatteryTray/             the app (WinForms, .NET 8)
   Program.cs              entry point, single-instance guard
   TrayContext.cs          tray icon, refresh timer, alerts
   TrayMenu.cs             right-click menu (native Windows menu, DPI-aware)
-  FullBubble.cs           "Battery full" bubble shown above the tray icon
+  FullTextOverlay.cs      big "Battery Full!" text shown above the tray area
   IconRenderer.cs         draws the number / plug / background into the icon
   AppSettings.cs          settings model, load/save as JSON
   SettingsForm.cs         Settings window (built in code, DPI-aware)

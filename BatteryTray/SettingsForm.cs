@@ -33,7 +33,6 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _chargeAlert = new() { Text = "Alert me when charged to", AutoSize = true };
     private readonly CheckBox _stepAlert = new() { Text = "Alert me at every 10% (100, 90 ... 10)", AutoSize = true };
     private readonly CheckBox _jumpAlert = new() { Text = "Alert me when the level jumps by more than 2%", AutoSize = true };
-    private readonly CheckBox _fullReminder = new() { Text = "Remind me every minute to unplug when full", AutoSize = true };
     private readonly NumericUpDown _chargeAlertPercent = new() { Minimum = 50, Maximum = 100, Width = 70 };
     private readonly CheckBox _trendAlert = new() { Text = "Tell me how much changed, every", AutoSize = true };
     private readonly NumericUpDown _trendMinutes = new() { Minimum = 1, Maximum = 240, Width = 70 };
@@ -93,7 +92,6 @@ internal sealed class SettingsForm : Form
             Row("Low battery level", Inline(_threshold, Caption("%"))),
             Full(_lowAlert),
             Full(Inline(_chargeAlert, _chargeAlertPercent, Caption("%"))),
-            Full(_fullReminder),
             Full(_stepAlert),
             Full(_jumpAlert),
             Full(Inline(_trendAlert, _trendMinutes, Caption("minutes"))));
@@ -199,7 +197,6 @@ internal sealed class SettingsForm : Form
         _threshold.Value = Math.Clamp(_settings.LowThreshold, 1, 99);
         _lowAlert.Checked = _settings.LowAlertEnabled;
         _chargeAlert.Checked = _settings.ChargeAlertEnabled;
-        _fullReminder.Checked = _settings.FullReminderEnabled;
         _stepAlert.Checked = _settings.StepAlertEnabled;
         _jumpAlert.Checked = _settings.JumpAlertEnabled;
         _chargeAlertPercent.Value = Math.Clamp(_settings.ChargeAlertPercent, 50, 100);
@@ -226,7 +223,6 @@ internal sealed class SettingsForm : Form
         LowThreshold = (int)_threshold.Value,
         LowAlertEnabled = _lowAlert.Checked,
         ChargeAlertEnabled = _chargeAlert.Checked,
-        FullReminderEnabled = _fullReminder.Checked,
         StepAlertEnabled = _stepAlert.Checked,
         JumpAlertEnabled = _jumpAlert.Checked,
         ChargeAlertPercent = (int)_chargeAlertPercent.Value,

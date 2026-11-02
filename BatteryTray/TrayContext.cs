@@ -7,7 +7,6 @@ internal sealed class TrayContext : ApplicationContext
 {
     private readonly NotifyIcon _notifyIcon;
     private readonly System.Windows.Forms.Timer _timer;
-    private readonly System.Windows.Forms.Timer _fullReminderTimer;
     private readonly TrayMenu _menu;
     private AppSettings _settings;
     private SettingsForm? _settingsForm;
@@ -22,14 +21,13 @@ internal sealed class TrayContext : ApplicationContext
     private int _lastPercent = NoMilestone;
     private DateTime _trendStartTime;
     private int _trendStartPercent = NoMilestone;
-    private const int FullReminderIntervalMs = 60_000;
     private const int BlinkIntervalMs = 600;
     private readonly System.Windows.Forms.Timer _blinkTimer;
     private Icon? _blankIcon;
     private bool _blinkHidden;
-    private FullBubble? _bubble;
+    private FullTextOverlay? _fullText;
     // Near full, Windows often reports 100% and 99% in turns. Stay "full" until the level falls
-    // below this, so the reminder timer does not restart each time and never reaches one minute.
+    // below this, so the blinking does not stop and start each time.
     private const int FullReleasePercent = 97;
     private bool _isFull;
 
@@ -59,11 +57,7 @@ internal sealed class TrayContext : ApplicationContext
         ApplyTimerInterval();
         _timer.Start();
 
-        // Separate timer: the check interval can be longer than one minute.
-        _fullReminderTimer = new System.Windows.Forms.Timer { Interval = FullReminderIntervalMs };
-        _fullReminderTimer.Tick += (_, _) => OnFullReminderTick();
-
-        // While full, the icon blinks so it is easy to notice.
+        // While full, the icon and the "Battery Full!" text blink so they are easy to notice.
         _blinkTimer = new System.Windows.Forms.Timer { Interval = BlinkIntervalMs };
         _blinkTimer.Tick += (_, _) => OnBlinkTick();
 
@@ -107,13 +101,12 @@ internal sealed class TrayContext : ApplicationContext
 
         bool wasFull = _isFull;
         _isFull = known && pluggedIn && (percent >= 100 || (_isFull && percent >= FullReleasePercent));
-        bool fullStarted = _settings.FullReminderEnabled && _isFull && !wasFull;
-        CheckAlerts(known, percent, pluggedIn, fullStarted);
-        bool remindFull = _settings.FullReminderEnabled && _isFull;
-        _fullReminderTimer.Enabled = remindFull;
-        SetBlinking(remindFull);
-        if (!remindFull)
-            _bubble?.Hide();
+        CheckAlerts(known, percent, pluggedIn, fullStarted: _isFull && !wasFull);
+        SetBlinking(_isFull);
+        if (_isFull)
+            ShowFullText();
+        else
+            _fullText?.Hide();
         _notifyIcon.Text = BuildTooltip(known, percent, pluggedIn, status);
 
         // null text means "draw the plug symbol".
@@ -143,6 +136,8 @@ internal sealed class TrayContext : ApplicationContext
             _blinkHidden = false;
             _notifyIcon.Icon = _currentIcon;
         }
+        if (!on)
+            _fullText?.SetBlinkOn(true);
     }
 
     /// <summary>Switches between the normal icon and an empty one.</summary>
@@ -156,30 +151,26 @@ internal sealed class TrayContext : ApplicationContext
         }
         _blinkHidden = !_blinkHidden;
         _notifyIcon.Icon = _blinkHidden ? _blankIcon : _currentIcon;
+
+        // The big text blinks together with the icon, and stays above other windows.
+        if (_fullText != null)
+        {
+            _fullText.SetBlinkOn(!_blinkHidden);
+            _fullText.KeepOnTop();
+        }
     }
 
-    /// <summary>Reads the level first, so no reminder shows if the charger was just removed.</summary>
-    private void OnFullReminderTick()
+    /// <summary>Shows the big "Battery Full!" text above the tray area.</summary>
+    private void ShowFullText()
     {
-        UpdateIcon();
-        if (_fullReminderTimer.Enabled)
-            ShowFullReminder();
-    }
-
-    /// <summary>
-    /// Uses the app's own bubble, not a Windows notification: Windows sometimes did not show
-    /// the repeated "Battery full" notification.
-    /// </summary>
-    private void ShowFullReminder()
-    {
-        _bubble ??= new FullBubble();
-        _bubble.ShowAt(_notifyIcon);
+        _fullText ??= new FullTextOverlay();
+        _fullText.ShowAboveTray(IconRenderer.ColorFor(BatteryState.Full, _settings));
     }
 
     /// <summary>
     /// Shows each alert once; it re-arms when the charger state or level moves back.
-    /// fullStarted: the battery just became full, so the "Battery full" notice shows at once
-    /// (the timer repeats it every minute) and the "Battery charged" notice is skipped.
+    /// fullStarted: the battery just became full. The blinking icon and text show that, so the
+    /// "Battery charged" and "Battery level 100%" notices are skipped.
     /// </summary>
     private void CheckAlerts(bool known, int percent, bool pluggedIn, bool fullStarted)
     {
@@ -220,10 +211,7 @@ internal sealed class TrayContext : ApplicationContext
             alertShown = true;
 
         if (fullStarted)
-        {
             alertShown = true;
-            ShowFullReminder();
-        }
 
         if (_settings.StepAlertEnabled)
             CheckMilestone(percent, alertShown);
@@ -365,9 +353,8 @@ internal sealed class TrayContext : ApplicationContext
         SystemEvents.DisplaySettingsChanged -= OnForceRedraw;
         SystemEvents.UserPreferenceChanged -= OnForceRedraw;
         _timer.Stop();
-        _fullReminderTimer.Stop();
         _blinkTimer.Stop();
-        _bubble?.Close();
+        _fullText?.Close();
         _settingsForm?.Close();
         _notifyIcon.Visible = false;
         base.ExitThreadCore();
@@ -378,9 +365,8 @@ internal sealed class TrayContext : ApplicationContext
         if (disposing)
         {
             _timer.Dispose();
-            _fullReminderTimer.Dispose();
             _blinkTimer.Dispose();
-            _bubble?.Dispose();
+            _fullText?.Dispose();
             _notifyIcon.Dispose();
             _menu.Dispose();
             _currentIcon?.Dispose();
