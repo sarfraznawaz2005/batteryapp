@@ -26,10 +26,11 @@ internal sealed class TrayContext : ApplicationContext
     private Icon? _blankIcon;
     private bool _blinkHidden;
     private FullTextOverlay? _fullText;
-    // Near full, Windows often reports 100% and 99% in turns. Stay "full" until the level falls
-    // below this, so the blinking does not stop and start each time.
-    private const int FullReleasePercent = 97;
-    private bool _isFull;
+    // Windows often reports two levels in turns (for example 100% and 99%). Stay "charged" until
+    // the level falls this much below the "charged to" level, so the blinking does not stop and
+    // start each time.
+    private const int ChargedReleaseMargin = 3;
+    private bool _isCharged;
 
     public TrayContext()
     {
@@ -99,11 +100,13 @@ internal sealed class TrayContext : ApplicationContext
             : known && percent <= _settings.LowThreshold ? BatteryState.Low
             : BatteryState.OnBattery;
 
-        bool wasFull = _isFull;
-        _isFull = known && pluggedIn && (percent >= 100 || (_isFull && percent >= FullReleasePercent));
-        CheckAlerts(known, percent, pluggedIn, fullStarted: _isFull && !wasFull);
-        SetBlinking(_isFull);
-        if (_isFull)
+        // Charged: plugged in and at or above the "Alert me when charged to" level (also 100%).
+        int chargedLevel = _settings.ChargeAlertPercent;
+        _isCharged = known && pluggedIn
+                     && (percent >= chargedLevel || (_isCharged && percent >= chargedLevel - ChargedReleaseMargin));
+        CheckAlerts(known, percent, pluggedIn);
+        SetBlinking(_isCharged);
+        if (_isCharged && _settings.FullTextEnabled)
             ShowFullText();
         else
             _fullText?.Hide();
@@ -169,10 +172,8 @@ internal sealed class TrayContext : ApplicationContext
 
     /// <summary>
     /// Shows each alert once; it re-arms when the charger state or level moves back.
-    /// fullStarted: the battery just became full. The blinking icon and text show that, so the
-    /// "Battery charged" and "Battery level 100%" notices are skipped.
     /// </summary>
-    private void CheckAlerts(bool known, int percent, bool pluggedIn, bool fullStarted)
+    private void CheckAlerts(bool known, int percent, bool pluggedIn)
     {
         if (!known)
             return;
@@ -198,19 +199,13 @@ internal sealed class TrayContext : ApplicationContext
         else if (_settings.ChargeAlertEnabled && !_chargeAlertShown && percent >= _settings.ChargeAlertPercent)
         {
             _chargeAlertShown = true;
-            if (!fullStarted)
-            {
-                alertShown = true;
-                _notifyIcon.ShowBalloonTip(10000, "Battery charged",
-                    $"Battery is at {percent}%. You can unplug the charger to help the battery last longer.",
-                    ToolTipIcon.Info);
-            }
+            alertShown = true;
+            _notifyIcon.ShowBalloonTip(10000, "Battery charged",
+                $"Battery is at {percent}%. You can unplug the charger to help the battery last longer.",
+                ToolTipIcon.Info);
         }
 
         if (CheckJump(percent))
-            alertShown = true;
-
-        if (fullStarted)
             alertShown = true;
 
         if (_settings.StepAlertEnabled)

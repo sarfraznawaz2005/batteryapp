@@ -17,8 +17,10 @@ It shows the current battery percentage as a number right in the tray, colored b
 - Shows a plug symbol instead of "100" when full and plugged in (optional, on by default).
 - Optional colored background: the number is drawn on a rounded box in the state color, sized
   automatically to fill the box. Off by default.
-- When full and plugged in, the tray icon and big "Battery Full!" text above the tray area blink
-  together until you unplug. This is not a Windows notification, so Windows cannot hide it.
+- When plugged in and charged to the "Alert me when charged to" level or more (default 80%,
+  including 100%), the tray icon and big "Battery Full!" text above the tray area blink together
+  until you unplug. This is not a Windows notification, so Windows cannot hide it. The text can be
+  turned off in Settings (on by default).
 - Alerts (Windows notifications), each shown once and re-armed when the state changes:
   - Battery low - when on battery and at or below the low battery level.
   - Battery charged - when plugged in and charged to 80% (configurable, 50-100%), to help

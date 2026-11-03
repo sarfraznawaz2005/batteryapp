@@ -31,6 +31,7 @@ internal sealed class SettingsForm : Form
     private readonly NumericUpDown _threshold = new() { Minimum = 1, Maximum = 99, Width = 70 };
     private readonly CheckBox _lowAlert = new() { Text = "Alert me when the battery is low", AutoSize = true };
     private readonly CheckBox _chargeAlert = new() { Text = "Alert me when charged to", AutoSize = true };
+    private readonly CheckBox _fullTextAlert = new() { Text = "Show blinking \"Battery Full!\" text at that level", AutoSize = true };
     private readonly CheckBox _stepAlert = new() { Text = "Alert me at every 10% (100, 90 ... 10)", AutoSize = true };
     private readonly CheckBox _jumpAlert = new() { Text = "Alert me when the level jumps by more than 2%", AutoSize = true };
     private readonly NumericUpDown _chargeAlertPercent = new() { Minimum = 50, Maximum = 100, Width = 70 };
@@ -92,6 +93,7 @@ internal sealed class SettingsForm : Form
             Row("Low battery level", Inline(_threshold, Caption("%"))),
             Full(_lowAlert),
             Full(Inline(_chargeAlert, _chargeAlertPercent, Caption("%"))),
+            Full(_fullTextAlert),
             Full(_stepAlert),
             Full(_jumpAlert),
             Full(Inline(_trendAlert, _trendMinutes, Caption("minutes"))));
@@ -167,6 +169,7 @@ internal sealed class SettingsForm : Form
         _threshold.ValueChanged += (_, _) => _preview.Invalidate();
         _useBackground.CheckedChanged += (_, _) => { UpdateEnabledState(); _preview.Invalidate(); };
         _chargeAlert.CheckedChanged += (_, _) => UpdateEnabledState();
+        _fullTextAlert.CheckedChanged += (_, _) => UpdateEnabledState();
         _trendAlert.CheckedChanged += (_, _) => UpdateEnabledState();
     }
 
@@ -176,7 +179,8 @@ internal sealed class SettingsForm : Form
         // With a background the text is sized automatically to fill the box.
         _fontSize.Enabled = !_useBackground.Checked;
         _shrink.Enabled = !_useBackground.Checked;
-        _chargeAlertPercent.Enabled = _chargeAlert.Checked;
+        // The level is used by both the charged alert and the blinking text.
+        _chargeAlertPercent.Enabled = _chargeAlert.Checked || _fullTextAlert.Checked;
         _trendMinutes.Enabled = _trendAlert.Checked;
     }
 
@@ -197,6 +201,7 @@ internal sealed class SettingsForm : Form
         _threshold.Value = Math.Clamp(_settings.LowThreshold, 1, 99);
         _lowAlert.Checked = _settings.LowAlertEnabled;
         _chargeAlert.Checked = _settings.ChargeAlertEnabled;
+        _fullTextAlert.Checked = _settings.FullTextEnabled;
         _stepAlert.Checked = _settings.StepAlertEnabled;
         _jumpAlert.Checked = _settings.JumpAlertEnabled;
         _chargeAlertPercent.Value = Math.Clamp(_settings.ChargeAlertPercent, 50, 100);
@@ -223,6 +228,7 @@ internal sealed class SettingsForm : Form
         LowThreshold = (int)_threshold.Value,
         LowAlertEnabled = _lowAlert.Checked,
         ChargeAlertEnabled = _chargeAlert.Checked,
+        FullTextEnabled = _fullTextAlert.Checked,
         StepAlertEnabled = _stepAlert.Checked,
         JumpAlertEnabled = _jumpAlert.Checked,
         ChargeAlertPercent = (int)_chargeAlertPercent.Value,
