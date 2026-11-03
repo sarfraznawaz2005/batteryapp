@@ -29,7 +29,7 @@ public sealed class AppSettings
 
     public bool LowAlertEnabled { get; set; } = true;
     public bool ChargeAlertEnabled { get; set; } = true;
-    public int ChargeAlertPercent { get; set; } = 80;
+    public int ChargeAlertPercent { get; set; } = 90;
 
     /// <summary>
     /// Show big blinking "Battery Full!" text above the tray while plugged in and at or above
